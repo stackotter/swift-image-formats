@@ -1,0 +1,32 @@
+{
+  "pins" : [
+    {
+      "identity" : "jpeg",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/stackotter/jpeg",
+      "state" : {
+        "revision" : "a27e47f49479993b2541bc5f5c95d9354ed567a0",
+        "version" : "1.0.2"
+      }
+    },
+    {
+      "identity" : "swift-hash",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/stackotter/swift-hash",
+      "state" : {
+        "revision" : "6e9301937718c3c0b2ce6bfd323a210a7490a007",
+        "version" : "0.6.3"
+      }
+    },
+    {
+      "identity" : "swift-png",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/stackotter/swift-png",
+      "state" : {
+        "revision" : "313bfc017df44fd07abb792c615471c42c470ded",
+        "version" : "4.4.5"
+      }
+    }
+  ],
+  "version" : 2
+}
