@@ -1,8 +1,12 @@
-import Bitmap
 import Foundation
 import JPEG
 import PNG
 import WebP
+
+public enum ImageLoadingError: LocalizedError {
+    case unknownMagicBytes
+    case unknownImageFileExtension(String)
+}
 
 public struct Image<Pixel: BytesConvertible> {
     public var width: Int
@@ -221,5 +225,85 @@ extension Image where Pixel: RGBAConvertible {
             height: height,
             data: data
         )
+    }
+
+    public static func load(from data: [UInt8], as format: ImageFormat) throws -> Self {
+        switch format {
+            case .png:
+                return try Image<RGBA>.loadPNG(from: data).convert(to: Pixel.self)
+            case .jpeg:
+                return try Image<RGB>.loadJPEG(from: data).convert(to: Pixel.self)
+            case .webp:
+                return try Image<RGBA>.loadWebP(from: data).convert(to: Pixel.self)
+        }
+    }
+
+    public static func load(from data: [UInt8]) throws -> Self {
+        guard let format = detectFormat(of: data) else {
+            throw ImageLoadingError.unknownMagicBytes
+        }
+
+        return try load(from: data, as: format)
+    }
+
+    public static func load(
+        from data: [UInt8],
+        usingFileExtension fileExtension: String
+    ) throws -> Self {
+        guard let format = ImageFormat(fromExtension: fileExtension) else {
+            throw ImageLoadingError.unknownImageFileExtension(fileExtension)
+        }
+
+        return try load(from: data, as: format)
+    }
+
+    public static func detectFormat(of data: [UInt8]) -> ImageFormat? {
+        let pngMagicBytes: [UInt8] = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
+
+        let jpegMagicBytes: [[UInt8]] = [
+            [0xff, 0xd8, 0xff, 0xdb],
+            [0xff, 0xd8, 0xff, 0xee],
+            [0xff, 0xd8, 0xff, 0xe1],
+            [0xff, 0xd8, 0xff, 0xe0],
+        ]
+
+        let webPMagicBytes: [UInt8?] = [
+            0x52, 0x49, 0x46, 0x46, nil, nil, nil, nil, 0x57, 0x45, 0x42, 0x50,
+        ]
+
+        if data.starts(with: pngMagicBytes) {
+            return .png
+        } else if jpegMagicBytes.contains(where: { bytes in
+            data.starts(with: bytes)
+        }) {
+            return .jpeg
+        } else if data.count >= webPMagicBytes.count
+            && zip(webPMagicBytes, data).allSatisfy({
+                $0 == nil || $0 == $1
+            })
+        {
+            return .webp
+        } else {
+            return nil
+        }
+    }
+}
+
+public enum ImageFormat {
+    case png
+    case jpeg
+    case webp
+
+    init?(fromExtension fileExtension: String) {
+        switch fileExtension.lowercased() {
+            case "png":
+                self = .png
+            case "jpg", "jpeg":
+                self = .jpeg
+            case "webp":
+                self = .webp
+            default:
+                return nil
+        }
     }
 }

@@ -33,6 +33,27 @@ final class ImageFormatsTests: XCTestCase {
         XCTAssertEqual(image[row: 9][column: 9], RGB(225, 221, 21))
     }
 
+    func testDetectedPNGLoading() throws {
+        let bytes = try loadBytes(path: "test.png")
+        let image = try Image<RGBA>.load(from: bytes)
+        XCTAssertEqual(image[row: 0][column: 0], RGBA(2, 1, 0, 255))
+        XCTAssertEqual(image[row: 9][column: 9], RGBA(223, 223, 12, 255))
+    }
+
+    func testDetectedWebPLoading() throws {
+        let bytes = try loadBytes(path: "test.webp")
+        let image = try Image<RGBA>.load(from: bytes)
+        XCTAssertEqual(image[row: 0][column: 0], RGBA(2, 1, 0, 255))
+        XCTAssertEqual(image[row: 9][column: 9], RGBA(223, 223, 12, 255))
+    }
+
+    func testDetectedJPEGLoading() throws {
+        let bytes = try loadBytes(path: "test.jpg")
+        let image = try Image<RGB>.load(from: bytes)
+        XCTAssertEqual(image[row: 0][column: 0], RGB(5, 1, 0))
+        XCTAssertEqual(image[row: 9][column: 9], RGB(225, 221, 21))
+    }
+
     func testRGBAToRGB() {
         let rgba = Image<RGBA>(
             width: 2,
