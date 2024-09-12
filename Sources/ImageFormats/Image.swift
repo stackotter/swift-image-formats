@@ -1,3 +1,4 @@
+import Foundation
 import JPEG
 import PNG
 import WebP
@@ -56,13 +57,23 @@ extension Image<RGBA> {
     public static func loadPNG(from data: [UInt8]) throws -> Self {
         var stream = InMemoryStream(data)
         let image = try PNG.Image.decompress(stream: &stream)
-        // TODO: Optimise [RGBA] -> [UInt8] conversions (or remove need for conversions)
+
+        let rgbaData: [UInt8]
+        if !image.layout.interlaced && image.layout.format.pixel == .rgba8 {
+            rgbaData = image.storage
+        } else {
+            rgbaData = RGBA.pack(image.unpack(as: RGBA.self), as: .rgba8(palette: [], fill: nil)) {
+                _ in
+                // This closure is unused when packing to `rgba8` so we can just make it return a
+                // constant function that satisfies the type checker.
+                { _ in 0 }
+            }
+        }
+
         return Image(
             width: image.size.x,
             height: image.size.y,
-            data: image.unpack(as: PNG.RGBA<UInt8>.self).flatMap { pixel in
-                [pixel.r, pixel.g, pixel.b, pixel.a]
-            }
+            data: rgbaData
         )
     }
 
@@ -95,6 +106,11 @@ extension Image where Pixel: RGBAConvertible {
     public func convert<NewPixelFormat: RGBAConvertible>(
         to format: NewPixelFormat.Type
     ) -> Image<NewPixelFormat> {
+        // Short-circuit if the image is already in the desired format
+        if let image = self as? Image<NewPixelFormat> {
+            return image
+        }
+
         var data = [UInt8](repeating: 0, count: NewPixelFormat.stride * width * height)
         for (i, pixel) in pixels.enumerated() {
             let start = i * NewPixelFormat.stride
