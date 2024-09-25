@@ -12,7 +12,7 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/stackotter/swift-png", from: "4.4.4"),
+        .package(url: "https://github.com/stackotter/swift-png", from: "4.4.7"),
         .package(url: "https://github.com/stackotter/jpeg", from: "1.0.2"),
         .package(url: "https://github.com/stackotter/swift-libwebp", from: "0.1.0"),
     ],
@@ -29,6 +29,10 @@ let package = Package(
             name: "ImageFormatsTests",
             dependencies: ["ImageFormats"],
             resources: [.copy("test.png"), .copy("test.jpg"), .copy("test.webp")]
+        ),
+        .executableTarget(
+            name: "Benchmarks",
+            dependencies: ["ImageFormats"]
         ),
     ]
 )

@@ -8,7 +8,7 @@ public enum ImageLoadingError: Error {
     case unknownImageFileExtension(String)
 }
 
-public struct Image<Pixel: BytesConvertible> {
+public struct Image<Pixel: BytesConvertible>: Equatable {
     public var width: Int
     public var height: Int
     public var data: [UInt8]
