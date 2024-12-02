@@ -35,12 +35,11 @@ public struct RGBA: BytesConvertible, RGBAConvertible, Equatable {
         self.init(value, value, value, .max)
     }
 
-    public func encode(to slice: inout ArraySlice<UInt8>) {
-        let startIndex = slice.startIndex
-        slice[startIndex] = red
-        slice[startIndex.advanced(by: 1)] = green
-        slice[startIndex.advanced(by: 2)] = blue
-        slice[startIndex.advanced(by: 3)] = alpha
+    public func encode(to array: inout [UInt8], startingAt offset: Int) {
+        array[offset] = red
+        array[offset + 1] = green
+        array[offset + 2] = blue
+        array[offset + 3] = alpha
     }
 
     public static func decode(_ bytes: ArraySlice<UInt8>) -> RGBA {

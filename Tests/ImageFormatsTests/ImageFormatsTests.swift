@@ -58,7 +58,7 @@ final class ImageFormatsTests: XCTestCase {
         let rgba = Image<RGBA>(
             width: 2,
             height: 2,
-            data: [
+            bytes: [
                 1, 2, 3, 4,
                 5, 6, 7, 8,
                 9, 10, 11, 12,
@@ -75,7 +75,7 @@ final class ImageFormatsTests: XCTestCase {
         let rgb = Image<RGB>(
             width: 2,
             height: 2,
-            data: [
+            bytes: [
                 1, 2, 3,
                 4, 5, 6,
                 7, 8, 9,
@@ -86,5 +86,47 @@ final class ImageFormatsTests: XCTestCase {
         for (rgbPixel, rgbaPixel) in zip(rgb.pixels, rgba.pixels) {
             XCTAssertEqual(rgbPixel.rgba, rgbaPixel)
         }
+    }
+
+    func testRGBToHSV() {
+        let rgb = Image<RGB>(
+            width: 3,
+            height: 1,
+            pixels: [
+                RGB(0, 0, 0),
+                RGB(255, 255, 255),
+                RGB(111, 155, 169),
+            ]
+        )
+        let hsv = rgb.convert(to: HSV.self)
+        XCTAssertEqual(
+            [
+                HSV(0, 0, 0),
+                HSV(0, 0, 1),
+                HSV(194.48275862068968, 0.3431952662721893, 0.6627450980392157),
+            ],
+            hsv.pixels
+        )
+    }
+
+    func testHSVToRGB() {
+        let hsv = Image<HSV>(
+            width: 3,
+            height: 1,
+            pixels: [
+                HSV(0, 0, 0),
+                HSV(0, 0, 1),
+                HSV(194.48275862068968, 0.3431952662721893, 0.6627450980392157),
+            ]
+        )
+        let rgb = hsv.convert(to: RGB.self)
+        XCTAssertEqual(
+            [
+                RGB(0, 0, 0),
+                RGB(255, 255, 255),
+                RGB(111, 155, 169),
+            ],
+            rgb.pixels
+        )
     }
 }

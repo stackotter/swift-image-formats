@@ -72,8 +72,8 @@ struct Grayscale: BytesConvertible, RGBAConvertible {
         luminosity = (rgba.red * 299 + rgba.green * 587 + rgba.blue * 114) / 1000
     }
 
-    func encode(to slice: inout ArraySlice<UInt8>) {
-        slice[slice.startIndex] = luminosity
+    func encode(to array: inout [UInt8], at offset: Int) {
+        array[offset] = luminosity
     }
 
     static func decode(_ bytes: ArraySlice<UInt8>) -> Self {

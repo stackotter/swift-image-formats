@@ -11,15 +11,15 @@ public enum ImageLoadingError: Error {
 public struct Image<Pixel: BytesConvertible>: Equatable {
     public var width: Int
     public var height: Int
-    public var data: [UInt8]
+    public var bytes: [UInt8]
 
     public var pixels: [Pixel] {
         var pixels: [Pixel] = []
         pixels.reserveCapacity(width * height)
         for i in 0..<(width * height) {
-            let start = data.startIndex.advanced(by: i * Pixel.stride)
+            let start = bytes.startIndex.advanced(by: i * Pixel.stride)
             let end = start.advanced(by: Pixel.stride)
-            let pixel = Pixel.decode(data[start..<end])
+            let pixel = Pixel.decode(bytes[start..<end])
             pixels.append(pixel)
         }
         return pixels
@@ -27,29 +27,61 @@ public struct Image<Pixel: BytesConvertible>: Equatable {
 
     public struct Row {
         public var width: Int
-        public var data: ArraySlice<UInt8>
+        public var bytes: ArraySlice<UInt8>
 
         public subscript(column column: Int) -> Pixel {
-            get {
-                precondition(0 <= column && column <= width, "column out of bounds")
-                let start = data.startIndex.advanced(by: column * Pixel.stride)
-                let end = start.advanced(by: Pixel.stride)
-                return Pixel.decode(data[start..<end])
-            }
-            set {
-                precondition(0 <= column && column <= width, "column out of bounds")
-                let start = data.startIndex.advanced(by: column * Pixel.stride)
-                let end = start.advanced(by: Pixel.stride)
-                newValue.encode(to: &data[start..<end])
-            }
+            precondition(0 <= column && column <= width, "column out of bounds")
+            let start = bytes.startIndex.advanced(by: column * Pixel.stride)
+            let end = start.advanced(by: Pixel.stride)
+            return Pixel.decode(bytes[start..<end])
         }
     }
 
     public subscript(row row: Int) -> Row {
         precondition(0 <= row && row <= height, "row out of bounds")
-        let start = data.startIndex.advanced(by: row * width * Pixel.stride)
+        let start = bytes.startIndex.advanced(by: row * width * Pixel.stride)
         let end = start.advanced(by: width * Pixel.stride)
-        return Row(width: width, data: data[start..<end])
+        return Row(width: width, bytes: bytes[start..<end])
+    }
+
+    public init(width: Int, height: Int, bytes: [UInt8]) {
+        // Probably a bit of a redundant precondition, but Pixel.stride could
+        // technically be negative cause it's user implementable, so I'll leave
+        // this here.
+        precondition(0 <= width && 0 <= height, "negative dimensions")
+        precondition(
+            bytes.count == width * height * Pixel.stride,
+            "incorrect number of bytes"
+        )
+        self.width = width
+        self.height = height
+        self.bytes = bytes
+    }
+
+    public init(width: Int, height: Int, pixels: [Pixel]) {
+        precondition(0 <= width && 0 <= height, "negative dimensions")
+        precondition(pixels.count == width * height, "incorrect number of pixels")
+
+        self.width = width
+        self.height = height
+
+        bytes = [UInt8](repeating: 0, count: Pixel.stride * pixels.count)
+        for (i, pixel) in pixels.enumerated() {
+            let start = i * Pixel.stride
+            pixel.encode(to: &bytes, startingAt: start)
+        }
+    }
+
+    public func map(_ transform: (Pixel) -> Pixel) -> Self {
+        var newBytes = [UInt8](repeating: 0, count: bytes.count)
+        for index in 0..<(width * height) {
+            let start = index * Pixel.stride
+            let end = start + Pixel.stride
+            let pixel = Pixel.decode(bytes[start..<end])
+            let newPixel = transform(pixel)
+            newPixel.encode(to: &newBytes, startingAt: start)
+        }
+        return Image(width: width, height: height, bytes: newBytes)
     }
 }
 
@@ -73,7 +105,7 @@ extension Image<RGBA> {
         return Image(
             width: image.size.x,
             height: image.size.y,
-            data: rgbaData
+            bytes: rgbaData
         )
     }
 
@@ -82,7 +114,7 @@ extension Image<RGBA> {
         return Image(
             width: image.width,
             height: image.height,
-            data: image.rgba
+            bytes: image.rgba
         )
     }
 }
@@ -95,7 +127,7 @@ extension Image<RGB> {
         return Image(
             width: image.size.x,
             height: image.size.y,
-            data: pixels.flatMap { pixel in
+            bytes: pixels.flatMap { pixel in
                 [pixel.r, pixel.g, pixel.b]
             }
         )
@@ -111,16 +143,18 @@ extension Image where Pixel: RGBAConvertible {
             return image
         }
 
-        var data = [UInt8](repeating: 0, count: NewPixelFormat.stride * width * height)
+        var data = [UInt8](
+            repeating: 0,
+            count: NewPixelFormat.stride * width * height
+        )
         for (i, pixel) in pixels.enumerated() {
             let start = i * NewPixelFormat.stride
-            let end = start + NewPixelFormat.stride
-            NewPixelFormat(from: pixel.rgba).encode(to: &data[start..<end])
+            NewPixelFormat(from: pixel.rgba).encode(to: &data, startingAt: start)
         }
         return Image<NewPixelFormat>(
             width: width,
             height: height,
-            data: data
+            bytes: data
         )
     }
 
