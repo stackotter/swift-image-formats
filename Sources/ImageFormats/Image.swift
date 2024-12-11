@@ -117,6 +117,29 @@ extension Image<RGBA> {
             bytes: image.rgba
         )
     }
+
+    public func encodeToPNG(level: Int = 7) throws -> [UInt8] {
+        var stream = InMemoryStream([])
+        let image = PNG.Image(
+            packing: pixels.map { pixel in
+                PNG.RGBA<UInt8>(
+                    pixel.red,
+                    pixel.green,
+                    pixel.blue,
+                    pixel.alpha
+                )
+            },
+            size: (x: width, y: height),
+            layout: .init(format: .rgba8(palette: [], fill: nil))
+        )
+        try image.compress(stream: &stream, level: level)
+        return stream.buffer
+    }
+
+    public func encodeToWebP(quality: Float = 0.9) throws -> [UInt8] {
+        let webp = WebP(width: width, height: height, rgba: bytes)
+        return try webp.encode(quality: quality)
+    }
 }
 
 extension Image<RGB> {
@@ -131,6 +154,41 @@ extension Image<RGB> {
                 [pixel.r, pixel.g, pixel.b]
             }
         )
+    }
+
+    public func encodeToJPEG(compression: Double = 0.75) throws -> [UInt8] {
+        let layout = JPEG.Layout<JPEG.Common>(
+            format: .ycc8,
+            process: .baseline,
+            components: [
+                1: (factor: (2, 2), qi: 0),
+                2: (factor: (1, 1), qi: 1),
+                3: (factor: (1, 1), qi: 1),
+            ],
+            scans: [
+                .sequential((1, \.0, \.0), (2, \.1, \.1), (3, \.1, \.1))
+            ]
+        )
+        let jfif: JPEG.JFIF = .init(version: .v1_2, density: (72, 72, .inches))
+        let image = JPEG.Data.Rectangular<JPEG.Common>.pack(
+            size: (x: width, y: height),
+            layout: layout,
+            metadata: [.jfif(jfif)],
+            pixels: pixels.map { pixel in
+                JPEG.RGB(pixel.red, pixel.green, pixel.blue)
+            }
+        )
+
+        var stream = InMemoryStream([])
+        try image.compress(
+            stream: &stream,
+            quanta: [
+                0: JPEG.CompressionLevel.luminance(compression).quanta,
+                1: JPEG.CompressionLevel.chrominance(compression).quanta,
+            ]
+        )
+
+        return stream.buffer
     }
 }
 
@@ -156,6 +214,19 @@ extension Image where Pixel: RGBAConvertible {
             height: height,
             bytes: data
         )
+    }
+
+    /// Encodes the image using the given format. Uses the default settings
+    /// used by each underlying encoding function.
+    public func encode(to format: ImageFormat) throws -> [UInt8] {
+        switch format {
+            case .png:
+                return try convert(to: RGBA.self).encodeToPNG()
+            case .jpeg:
+                return try convert(to: RGB.self).encodeToJPEG()
+            case .webp:
+                return try convert(to: RGBA.self).encodeToWebP()
+        }
     }
 
     public static func load(from data: [UInt8], as format: ImageFormat) throws -> Self {
@@ -220,8 +291,13 @@ extension Image where Pixel: RGBAConvertible {
     }
 }
 
-private final class InMemoryStream: PNG.BytestreamSource, JPEG.Bytestream.Source {
-    let buffer: [UInt8]
+private final class InMemoryStream:
+    PNG.BytestreamSource,
+    PNG.BytestreamDestination,
+    JPEG.Bytestream.Source,
+    JPEG.Bytestream.Destination
+{
+    var buffer: [UInt8]
     var index: Int
 
     init(_ buffer: [UInt8]) {
@@ -238,5 +314,9 @@ private final class InMemoryStream: PNG.BytestreamSource, JPEG.Bytestream.Source
         let slice = buffer[index..<(index + stride)]
         index += stride
         return Array(slice)
+    }
+
+    func write(_ buffer: [UInt8]) -> Void? {
+        self.buffer += buffer
     }
 }
