@@ -1,12 +1,18 @@
 import Foundation
 import JPEG
-import PNG
+import LibPNG
 import WebP
 
 public enum ImageLoadingError: Error {
     case unknownMagicBytes
     case unknownImageFileExtension(String)
+    case pngError(code: Int)
 }
+
+// Constant macro values taken from libpng (macros aren't accessible
+// from Swift so we just need to use the raw values).
+private let pngFormatRGBA: png_uint_32 = 3
+private let pngImageVersion: png_uint_32 = 1
 
 public struct Image<Pixel: BytesConvertible>: Equatable {
     public var width: Int
@@ -87,25 +93,29 @@ public struct Image<Pixel: BytesConvertible>: Equatable {
 
 extension Image<RGBA> {
     public static func loadPNG(from data: [UInt8]) throws -> Self {
-        var stream = InMemoryStream(data)
-        let image = try PNG.Image.decompress(stream: &stream)
+        var image = png_image()
+        image.version = pngImageVersion
 
-        let rgbaData: [UInt8]
-        if !image.layout.interlaced && image.layout.format.pixel == .rgba8 {
-            rgbaData = image.storage
-        } else {
-            rgbaData = RGBA.pack(image.unpack(as: RGBA.self), as: .rgba8(palette: [], fill: nil)) {
-                _ in
-                // This closure is unused when packing to `rgba8` so we can just make it return a
-                // constant function that satisfies the type checker.
-                { _ in 0 }
-            }
+        guard png_image_begin_read_from_memory(&image, data, data.count) != 0 else {
+            throw ImageLoadingError.pngError(code: Int(image.warning_or_error))
+        }
+
+        image.format = pngFormatRGBA
+
+        // The PNG_IMAGE_SIZE macro isn't available to Swift, but the calculation
+        // it performs is pretty standard so it *should* be safe enough to just
+        // do it ourselves and hope libpng never changes it.
+        let rgbaByteCount = Int(image.width * image.height * 4)
+        var rgbaBytes = [UInt8](repeating: 0, count: rgbaByteCount)
+
+        guard png_image_finish_read(&image, nil, &rgbaBytes, 0, nil) != 0 else {
+            throw ImageLoadingError.pngError(code: Int(image.warning_or_error))
         }
 
         return Image(
-            width: image.size.x,
-            height: image.size.y,
-            bytes: rgbaData
+            width: Int(image.width),
+            height: Int(image.height),
+            bytes: rgbaBytes
         )
     }
 
@@ -118,22 +128,34 @@ extension Image<RGBA> {
         )
     }
 
-    public func encodeToPNG(level: Int = 7) throws -> [UInt8] {
-        var stream = InMemoryStream([])
-        let image = PNG.Image(
-            packing: pixels.map { pixel in
-                PNG.RGBA<UInt8>(
-                    pixel.red,
-                    pixel.green,
-                    pixel.blue,
-                    pixel.alpha
-                )
-            },
-            size: (x: width, y: height),
-            layout: .init(format: .rgba8(palette: [], fill: nil))
-        )
-        try image.compress(stream: &stream, level: level)
-        return stream.buffer
+    public func encodeToPNG() throws -> [UInt8] {
+        var image = png_image()
+        image.width = png_uint_32(width)
+        image.height = png_uint_32(height)
+        image.format = pngFormatRGBA
+
+        let stride = png_int_32(image.width * 4)
+        var size: png_alloc_size_t = 0
+        guard
+            png_image_write_to_memory(
+                &image, nil, &size, 0, bytes,
+                stride, nil
+            ) != 0
+        else {
+            throw ImageLoadingError.pngError(code: Int(image.warning_or_error))
+        }
+
+        var outputBuffer = [UInt8](repeating: 0, count: Int(size))
+        guard
+            png_image_write_to_memory(
+                &image, &outputBuffer, &size, 0,
+                bytes, stride, nil
+            ) != 0
+        else {
+            throw ImageLoadingError.pngError(code: Int(image.warning_or_error))
+        }
+
+        return outputBuffer
     }
 
     public func encodeToWebP(quality: Float = 0.9) throws -> [UInt8] {
@@ -292,8 +314,6 @@ extension Image where Pixel: RGBAConvertible {
 }
 
 private final class InMemoryStream:
-    PNG.BytestreamSource,
-    PNG.BytestreamDestination,
     JPEG.Bytestream.Source,
     JPEG.Bytestream.Destination
 {

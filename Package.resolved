@@ -10,12 +10,12 @@
       }
     },
     {
-      "identity" : "swift-hash",
+      "identity" : "libpng",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/stackotter/swift-hash",
+      "location" : "https://github.com/the-swift-collective/libpng",
       "state" : {
-        "revision" : "7151d95817516d96509fdfeb3faaa92f273df47f",
-        "version" : "0.6.4"
+        "revision" : "0eff23aca92a086b7892831f5cb4f58e15be9449",
+        "version" : "1.6.45"
       }
     },
     {
@@ -28,12 +28,12 @@
       }
     },
     {
-      "identity" : "swift-png",
+      "identity" : "zlib",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/stackotter/swift-png",
+      "location" : "https://github.com/the-swift-collective/zlib.git",
       "state" : {
-        "revision" : "9f6f85e1a0d299b7c938fbb61566e30db634c030",
-        "version" : "4.4.7"
+        "revision" : "f35d438c14187cb369dfd82603c3427dc66fbed5",
+        "version" : "1.3.1"
       }
     }
   ],
