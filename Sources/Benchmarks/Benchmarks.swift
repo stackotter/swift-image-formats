@@ -6,7 +6,10 @@ struct Benchmarks {
     static func main() {
         do {
             let data = try Data(
-                contentsOf: URL(fileURLWithPath: "/Users/stackotter/Desktop/wide_screenshot.png")
+                contentsOf: URL(
+                    fileURLWithPath:
+                        "/Users/stackotter/Desktop/Projects/SwiftCrossUI/TestFiles/wide_screenshot.png"
+                )
             )
 
             let start = CFAbsoluteTimeGetCurrent()

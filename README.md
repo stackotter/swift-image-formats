@@ -4,9 +4,9 @@ A cross-platform Swift library for working with various image file formats.
 
 ### Supported image formats
 
-- `.png`: Using [tayloraswift/swift-png](https://github.com/tayloraswift/swift-png)
+- `.png`: Using [pnggroup/libpng](https://github.com/pnggroup/libpng) (via [the-swift-collective/libpng](https://github.com/the-swift-collective/libpng))
 - `.jpeg`: Using [tayloraswift/jpeg](https://github.com/tayloraswift/jpeg)
-- `.webp`: Using [webmproject/libwebp](https://github.com/webmproject/libwebp)
+- `.webp`: Using [webmproject/libwebp](https://github.com/webmproject/libwebp) (via [stackotter/swift-libwebp](https://github.com/stackotter/swift-libwebp))
 
 In future I'd like to add support for bitmaps, gifs, and heic files.
 
@@ -31,6 +31,19 @@ let image = Image<RGBA>.load(from: bytes, usingFileExtension: fileExtension)
 print("width = \(image.width)")
 print("height = \(image.height)")
 print("pixel @ (0, 0) = \(image[row: 0][column: 0])")
+```
+
+#### Saving image files
+
+```swift
+import Foundation
+import ImageFormats
+
+let image: Image<RGBA> = ...
+let url = URL(fileURLWithPath: "image.png")
+
+let pngBytes = try image.encodeToPNG()
+try Data(pngBytes).write(to: url)
 ```
 
 #### Detect file format from magic bytes
