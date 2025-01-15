@@ -6,7 +6,7 @@ import WebP
 public enum ImageLoadingError: Error {
     case unknownMagicBytes
     case unknownImageFileExtension(String)
-    case pngError(code: Int)
+    case pngError(code: Int, message: String)
 }
 
 // Constant macro values taken from libpng (macros aren't accessible
@@ -94,10 +94,14 @@ public struct Image<Pixel: BytesConvertible>: Equatable {
 extension Image<RGBA> {
     public static func loadPNG(from data: [UInt8]) throws -> Self {
         var image = png_image()
+        memset(&image, 0, MemoryLayout<png_image>.size)
         image.version = pngImageVersion
 
         guard png_image_begin_read_from_memory(&image, data, data.count) != 0 else {
-            throw ImageLoadingError.pngError(code: Int(image.warning_or_error))
+            throw ImageLoadingError.pngError(
+                code: Int(image.warning_or_error),
+                message: image.swiftMessage
+            )
         }
 
         image.format = pngFormatRGBA
@@ -109,7 +113,10 @@ extension Image<RGBA> {
         var rgbaBytes = [UInt8](repeating: 0, count: rgbaByteCount)
 
         guard png_image_finish_read(&image, nil, &rgbaBytes, 0, nil) != 0 else {
-            throw ImageLoadingError.pngError(code: Int(image.warning_or_error))
+            throw ImageLoadingError.pngError(
+                code: Int(image.warning_or_error),
+                message: image.swiftMessage
+            )
         }
 
         return Image(
@@ -133,26 +140,34 @@ extension Image<RGBA> {
         image.width = png_uint_32(width)
         image.height = png_uint_32(height)
         image.format = pngFormatRGBA
+        image.version = pngImageVersion
 
-        let stride = png_int_32(image.width * 4)
         var size: png_alloc_size_t = 0
         guard
             png_image_write_to_memory(
                 &image, nil, &size, 0, bytes,
-                stride, nil
+                0, nil
             ) != 0
         else {
-            throw ImageLoadingError.pngError(code: Int(image.warning_or_error))
+
+            throw ImageLoadingError.pngError(
+                code: Int(image.warning_or_error),
+                message: image.swiftMessage
+            )
         }
 
         var outputBuffer = [UInt8](repeating: 0, count: Int(size))
         guard
             png_image_write_to_memory(
                 &image, &outputBuffer, &size, 0,
-                bytes, stride, nil
+                bytes, 0, nil
             ) != 0
         else {
-            throw ImageLoadingError.pngError(code: Int(image.warning_or_error))
+            print("Failed to write to memory")
+            throw ImageLoadingError.pngError(
+                code: Int(image.warning_or_error),
+                message: image.swiftMessage
+            )
         }
 
         return outputBuffer
@@ -338,5 +353,15 @@ private final class InMemoryStream:
 
     func write(_ buffer: [UInt8]) -> Void? {
         self.buffer += buffer
+    }
+}
+
+extension png_image {
+    var swiftMessage: String {
+        withUnsafePointer(to: message) { pointer in
+            pointer.withMemoryRebound(to: CChar.self, capacity: 1) { pointer in
+                String(cString: pointer)
+            }
+        }
     }
 }

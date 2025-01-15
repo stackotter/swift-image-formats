@@ -12,9 +12,9 @@ struct Benchmarks {
                 )
             )
 
-            let start = CFAbsoluteTimeGetCurrent()
+            let start = ProcessInfo.processInfo.systemUptime
             _ = try Image<RGBA>.load(from: Array(data))
-            print("elapsed:", CFAbsoluteTimeGetCurrent() - start)
+            print("elapsed:", ProcessInfo.processInfo.systemUptime - start)
         } catch {
             print("error:", error)
         }

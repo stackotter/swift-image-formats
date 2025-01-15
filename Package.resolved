@@ -23,8 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/stackotter/swift-libwebp",
       "state" : {
-        "revision" : "a2868991d916fb2c9ccd2714b77fb52aeea8d2ec",
-        "version" : "0.1.0"
+        "revision" : "61dc3787c764022ad2f5ab4f9994a569afe86f9f",
+        "version" : "0.2.0"
       }
     },
     {
