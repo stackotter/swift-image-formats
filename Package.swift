@@ -14,7 +14,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/the-swift-collective/libpng", from: "1.6.45"),
         .package(url: "https://github.com/stackotter/jpeg", from: "1.0.2"),
-        .package(url: "https://github.com/stackotter/swift-libwebp", from: "0.2.0"),
+        .package(url: "https://github.com/the-swift-collective/libwebp", from: "1.4.1"),
     ],
     targets: [
         .target(
@@ -22,7 +22,7 @@ let package = Package(
             dependencies: [
                 .product(name: "LibPNG", package: "libpng"),
                 .product(name: "JPEG", package: "jpeg"),
-                .product(name: "WebP", package: "swift-libwebp"),
+                .product(name: "WebP", package: "libwebp"),
             ]
         ),
         .testTarget(
