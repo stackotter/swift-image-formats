@@ -6,7 +6,7 @@ A cross-platform Swift library for working with various image file formats.
 
 - `.png`: Using [pnggroup/libpng](https://github.com/pnggroup/libpng) (via [the-swift-collective/libpng](https://github.com/the-swift-collective/libpng))
 - `.jpeg`: Using [tayloraswift/jpeg](https://github.com/tayloraswift/jpeg)
-- `.webp`: Using [webmproject/libwebp](https://github.com/webmproject/libwebp) (via [stackotter/swift-libwebp](https://github.com/stackotter/swift-libwebp))
+- `.webp`: Using [webmproject/libwebp](https://github.com/webmproject/libwebp) (via [the-swift-collective/libwebp](https://github.com/the-swift-collective/libpng))
 
 In future I'd like to add support for bitmaps, gifs, and heic files.
 

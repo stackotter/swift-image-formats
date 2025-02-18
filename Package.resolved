@@ -19,12 +19,12 @@
       }
     },
     {
-      "identity" : "swift-libwebp",
+      "identity" : "libwebp",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/stackotter/swift-libwebp",
+      "location" : "https://github.com/the-swift-collective/libwebp",
       "state" : {
-        "revision" : "61dc3787c764022ad2f5ab4f9994a569afe86f9f",
-        "version" : "0.2.0"
+        "revision" : "5f745a17b9a5c2a4283f17c2cde4517610ab5f99",
+        "version" : "1.4.1"
       }
     },
     {
