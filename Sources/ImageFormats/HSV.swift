@@ -1,4 +1,4 @@
-public struct HSV: BytesConvertible, RGBAConvertible, Equatable {
+public struct HSV: BytesConvertible, RGBAConvertible, Hashable, Sendable {
     public static let stride = 3 * MemoryLayout<Double>.stride
 
     public var hue: Double

@@ -3,7 +3,7 @@ import JPEG
 import LibPNG
 import WebP
 
-public enum ImageLoadingError: Error {
+public enum ImageLoadingError: Error, Sendable {
     case unknownMagicBytes
     case unknownImageFileExtension(String)
     case pngError(code: Int, message: String)
@@ -14,7 +14,7 @@ public enum ImageLoadingError: Error {
 private let pngFormatRGBA: png_uint_32 = 3
 private let pngImageVersion: png_uint_32 = 1
 
-public struct Image<Pixel: BytesConvertible>: Equatable {
+public struct Image<Pixel: BytesConvertible>: Hashable, Sendable {
     public var width: Int
     public var height: Int
     public var bytes: [UInt8]

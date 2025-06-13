@@ -1,4 +1,4 @@
-public struct RGB: BytesConvertible, RGBAConvertible, Equatable {
+public struct RGB: BytesConvertible, RGBAConvertible, Hashable, Sendable {
     public static let stride = 3
 
     public var red: UInt8

@@ -1,4 +1,4 @@
-public enum ImageFormat {
+public enum ImageFormat: Hashable, Sendable {
     case png
     case jpeg
     case webp
