@@ -135,48 +135,59 @@ extension Image<RGBA> {
         )
     }
 
-    public func encodeToPNG() throws -> [UInt8] {
-        var image = png_image()
-        image.width = png_uint_32(width)
-        image.height = png_uint_32(height)
-        image.format = pngFormatRGBA
-        image.version = pngImageVersion
-
-        var size: png_alloc_size_t = 0
-        guard
-            png_image_write_to_memory(
-                &image, nil, &size, 0, bytes,
-                0, nil
-            ) != 0
-        else {
-
-            throw ImageLoadingError.pngError(
-                code: Int(image.warning_or_error),
-                message: image.swiftMessage
-            )
-        }
-
-        var outputBuffer = [UInt8](repeating: 0, count: Int(size))
-        guard
-            png_image_write_to_memory(
-                &image, &outputBuffer, &size, 0,
-                bytes, 0, nil
-            ) != 0
-        else {
-            print("Failed to write to memory")
-            throw ImageLoadingError.pngError(
-                code: Int(image.warning_or_error),
-                message: image.swiftMessage
-            )
-        }
-
-        return outputBuffer
-    }
-
     public func encodeToWebP(quality: Float = 0.9) throws -> [UInt8] {
         let webp = WebP(width: width, height: height, rgba: bytes)
         return try webp.encode(quality: quality)
     }
+}
+
+extension Image<RGBA> {
+    public func encodeToPNG() throws -> [UInt8] {
+        try encodeImageToPNG(self)
+    }
+}
+
+extension Image<ARGB> {
+    public func encodeToPNG() throws -> [UInt8] {
+        try encodeImageToPNG(self)
+    }
+}
+
+func encodeImageToPNG<T: PNGSupportedFormat>(_ image: Image<T>) throws -> [UInt8] {
+    var pngImage = png_image()
+    pngImage.width = png_uint_32(image.width)
+    pngImage.height = png_uint_32(image.height)
+    pngImage.format = T.pngFormatId
+    pngImage.version = pngImageVersion
+
+    var size: png_alloc_size_t = 0
+    guard
+        png_image_write_to_memory(
+            &pngImage, nil, &size, 0, image.bytes,
+            0, nil
+        ) != 0
+    else {
+        throw ImageLoadingError.pngError(
+            code: Int(pngImage.warning_or_error),
+            message: pngImage.swiftMessage
+        )
+    }
+
+    var outputBuffer = [UInt8](repeating: 0, count: Int(size))
+    guard
+        png_image_write_to_memory(
+            &pngImage, &outputBuffer, &size, 0,
+            image.bytes, 0, nil
+        ) != 0
+    else {
+        print("Failed to write to memory")
+        throw ImageLoadingError.pngError(
+            code: Int(pngImage.warning_or_error),
+            message: pngImage.swiftMessage
+        )
+    }
+
+    return outputBuffer    
 }
 
 extension Image<RGB> {
