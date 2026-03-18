@@ -28,7 +28,11 @@ let package = Package(
         .testTarget(
             name: "ImageFormatsTests",
             dependencies: ["ImageFormats"],
-            resources: [.copy("test.png"), .copy("test.jpg"), .copy("test.webp")]
+            resources: [
+                .copy("test.png"),
+                .copy("test.jpg"),
+                .copy("test.webp"),
+            ]
         ),
         .executableTarget(
             name: "Benchmarks",
