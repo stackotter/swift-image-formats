@@ -11,6 +11,13 @@ extension Interpolatable {
     }
 }
 
+extension Interpolatable {
+    /// Division by a scalar.
+    public static func / (_ value: Self, _ scalar: Double) -> Self {
+        value * (1 / scalar)
+    }
+}
+
 /// Interpolatable types are trivially convertible to interpolatable types.
 extension Interpolatable {
     public init(from interpolatable: Self) {
