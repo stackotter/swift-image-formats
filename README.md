@@ -102,7 +102,3 @@ go via `RGBA`.
 let image: Image<RGB> = ...
 let grayscale = image.convert(to: Grayscale.self)
 ```
-
-#### Saving image files
-
-Not yet implemented.
