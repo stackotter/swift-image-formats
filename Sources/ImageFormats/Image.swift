@@ -1,5 +1,5 @@
 import Foundation
-import JPEG
+import JPEGTurbo
 import LibPNG
 import WebP
 
@@ -7,6 +7,7 @@ public enum ImageLoadingError: Error, Sendable {
     case unknownMagicBytes
     case unknownImageFileExtension(String)
     case pngError(code: Int, message: String)
+    case jpegError(String)
 }
 
 // Constant macro values taken from libpng (macros aren't accessible
@@ -192,52 +193,113 @@ func encodeImageToPNG<T: PNGSupportedFormat>(_ image: Image<T>) throws -> [UInt8
 
 extension Image<RGB> {
     public static func loadJPEG(from data: [UInt8]) throws -> Self {
-        var stream = InMemoryStream(data)
-        let image = try JPEG.Data.Rectangular<JPEG.Common>.decompress(stream: &stream)
-        let pixels: [JPEG.RGB] = image.unpack(as: JPEG.RGB.self)
+        guard let handle = tjInitDecompress() else {
+            throw turboJPEGError()
+        }
+
+        defer { tjDestroy(handle) }
+
+        var width: Int32 = 0
+        var height: Int32 = 0
+        var subsampling: Int32 = 0
+        var colorspace: Int32 = 0
+        let headerResult = data.withUnsafeBufferPointer { buffer in
+            tjDecompressHeader3(
+                handle,
+                buffer.baseAddress,
+                UInt(data.count),
+                &width,
+                &height,
+                &subsampling,
+                &colorspace
+            )
+        }
+
+        guard headerResult == 0 else {
+            throw turboJPEGError(handle)
+        }
+
+        let imageWidth = Int(width)
+        let imageHeight = Int(height)
+        var bytes = [UInt8](
+            repeating: 0,
+            count: imageWidth * imageHeight * RGB.stride
+        )
+        let decompressResult = data.withUnsafeBufferPointer { input in
+            bytes.withUnsafeMutableBufferPointer { output in
+                tjDecompress2(
+                    handle,
+                    input.baseAddress,
+                    UInt(data.count),
+                    output.baseAddress,
+                    width,
+                    0,
+                    height,
+                    Int32(TJPF_RGB.rawValue),
+                    0
+                )
+            }
+        }
+
+        guard decompressResult == 0 else {
+            throw turboJPEGError(handle)
+        }
+
         return Image(
-            width: image.size.x,
-            height: image.size.y,
-            bytes: pixels.flatMap { pixel in
-                [pixel.r, pixel.g, pixel.b]
-            }
+            width: imageWidth,
+            height: imageHeight,
+            bytes: bytes
         )
     }
 
-    public func encodeToJPEG(compression: Double = 0.75) throws -> [UInt8] {
-        let layout = JPEG.Layout<JPEG.Common>(
-            format: .ycc8,
-            process: .baseline,
-            components: [
-                1: (factor: (2, 2), qi: 0),
-                2: (factor: (1, 1), qi: 1),
-                3: (factor: (1, 1), qi: 1),
-            ],
-            scans: [
-                .sequential((1, \.0, \.0), (2, \.1, \.1), (3, \.1, \.1))
-            ]
+    public func encodeToJPEG(quality: Double = 0.75) throws -> [UInt8] {
+        guard let handle = tjInitCompress() else {
+            throw turboJPEGError()
+        }
+        defer { tjDestroy(handle) }
+
+        let quality = Int32(
+            (min(max(quality, 0), 1) * 100).rounded()
         )
-        let jfif: JPEG.JFIF = .init(version: .v1_2, density: (72, 72, .inches))
-        let image = JPEG.Data.Rectangular<JPEG.Common>.pack(
-            size: (x: width, y: height),
-            layout: layout,
-            metadata: [.jfif(jfif)],
-            pixels: pixels.map { pixel in
-                JPEG.RGB(pixel.red, pixel.green, pixel.blue)
+        var jpegBuffer: UnsafeMutablePointer<UInt8>?
+        var jpegSize: UInt = 0
+        let compressResult = bytes.withUnsafeBufferPointer { input in
+            tjCompress2(
+                handle,
+                input.baseAddress,
+                Int32(width),
+                0,
+                Int32(height),
+                Int32(TJPF_RGB.rawValue),
+                &jpegBuffer,
+                &jpegSize,
+                Int32(TJSAMP_420.rawValue),
+                max(quality, 1),
+                0
+            )
+        }
+        guard compressResult == 0, let jpegBuffer else {
+            if let jpegBuffer {
+                tjFree(jpegBuffer)
             }
-        )
+            throw turboJPEGError(handle)
+        }
+        defer { tjFree(jpegBuffer) }
 
-        var stream = InMemoryStream([])
-        try image.compress(
-            stream: &stream,
-            quanta: [
-                0: JPEG.CompressionLevel.luminance(compression).quanta,
-                1: JPEG.CompressionLevel.chrominance(compression).quanta,
-            ]
+        return Array(
+            UnsafeBufferPointer(start: jpegBuffer, count: Int(jpegSize))
         )
-
-        return stream.buffer
     }
+}
+
+private func turboJPEGError(_ handle: tjhandle? = nil) -> ImageLoadingError {
+    if let handle, let message = tjGetErrorStr2(handle) {
+        return .jpegError(String(cString: message))
+    }
+    if let message = tjGetErrorStr() {
+        return .jpegError(String(cString: message))
+    }
+    return .jpegError("Unknown TurboJPEG error")
 }
 
 extension Image where Pixel: RGBAConvertible {
@@ -336,34 +398,6 @@ extension Image where Pixel: RGBAConvertible {
         } else {
             return nil
         }
-    }
-}
-
-private final class InMemoryStream:
-    JPEG.Bytestream.Source,
-    JPEG.Bytestream.Destination
-{
-    var buffer: [UInt8]
-    var index: Int
-
-    init(_ buffer: [UInt8]) {
-        self.buffer = buffer
-        index = 0
-    }
-
-    func read(count: Int) -> [UInt8]? {
-        guard index < buffer.count else {
-            return nil
-        }
-
-        let stride = min(count, buffer.count - index)
-        let slice = buffer[index..<(index + stride)]
-        index += stride
-        return Array(slice)
-    }
-
-    func write(_ buffer: [UInt8]) -> Void? {
-        self.buffer += buffer
     }
 }
 

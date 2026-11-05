@@ -30,7 +30,27 @@ final class ImageFormatsTests: XCTestCase {
         let bytes = try loadBytes(path: "test.jpg")
         let image = try Image.loadJPEG(from: bytes)
         XCTAssertEqual(image[row: 0][column: 0], RGB(5, 1, 0))
-        XCTAssertEqual(image[row: 9][column: 9], RGB(225, 221, 21))
+        XCTAssertEqual(image[row: 9][column: 9], RGB(227, 221, 23))
+    }
+
+    func testJPEGEncoding() throws {
+        let image = Image<RGB>(
+            width: 2,
+            height: 2,
+            pixels: [
+                RGB(255, 0, 0),
+                RGB(0, 255, 0),
+                RGB(0, 0, 255),
+                RGB(255, 255, 255),
+            ]
+        )
+
+        let bytes = try image.encodeToJPEG(quality: 0.9)
+        XCTAssertTrue(bytes.starts(with: [0xff, 0xd8, 0xff]))
+
+        let decoded = try Image<RGB>.loadJPEG(from: bytes)
+        XCTAssertEqual(decoded.width, image.width)
+        XCTAssertEqual(decoded.height, image.height)
     }
 
     func testDetectedPNGLoading() throws {
@@ -51,7 +71,7 @@ final class ImageFormatsTests: XCTestCase {
         let bytes = try loadBytes(path: "test.jpg")
         let image = try Image<RGB>.load(from: bytes)
         XCTAssertEqual(image[row: 0][column: 0], RGB(5, 1, 0))
-        XCTAssertEqual(image[row: 9][column: 9], RGB(225, 221, 21))
+        XCTAssertEqual(image[row: 9][column: 9], RGB(227, 221, 23))
     }
 
     func testRGBAToRGB() {

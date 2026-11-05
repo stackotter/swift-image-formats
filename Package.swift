@@ -13,7 +13,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/the-swift-collective/libpng", from: "1.6.45"),
-        .package(url: "https://github.com/stackotter/jpeg", from: "1.0.2"),
+        .package(url: "https://github.com/stackotter/libjpegturbo", .upToNextMinor(from: "0.1.0")),
         .package(url: "https://github.com/the-swift-collective/libwebp", from: "1.4.1"),
     ],
     targets: [
@@ -21,7 +21,7 @@ let package = Package(
             name: "ImageFormats",
             dependencies: [
                 .product(name: "LibPNG", package: "libpng"),
-                .product(name: "JPEG", package: "jpeg"),
+                .product(name: "JPEGTurbo", package: "libjpegturbo"),
                 .product(name: "WebP", package: "libwebp"),
             ]
         ),

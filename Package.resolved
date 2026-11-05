@@ -1,12 +1,12 @@
 {
   "pins" : [
     {
-      "identity" : "jpeg",
+      "identity" : "libjpegturbo",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/stackotter/jpeg",
+      "location" : "https://github.com/stackotter/libjpegturbo",
       "state" : {
-        "revision" : "a27e47f49479993b2541bc5f5c95d9354ed567a0",
-        "version" : "1.0.2"
+        "revision" : "4bdf4c397c7f1c30d5fd9906a661bcb87575c9db",
+        "version" : "0.1.0"
       }
     },
     {
