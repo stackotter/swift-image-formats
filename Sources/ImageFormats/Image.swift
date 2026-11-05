@@ -207,7 +207,7 @@ extension Image<RGB> {
             tjDecompressHeader3(
                 handle,
                 buffer.baseAddress,
-                UInt(data.count),
+                CUnsignedLong(data.count),
                 &width,
                 &height,
                 &subsampling,
@@ -230,7 +230,7 @@ extension Image<RGB> {
                 tjDecompress2(
                     handle,
                     input.baseAddress,
-                    UInt(data.count),
+                    CUnsignedLong(data.count),
                     output.baseAddress,
                     width,
                     0,
@@ -262,7 +262,7 @@ extension Image<RGB> {
             (min(max(quality, 0), 1) * 100).rounded()
         )
         var jpegBuffer: UnsafeMutablePointer<UInt8>?
-        var jpegSize: UInt = 0
+        var jpegSize: CUnsignedLong = 0
         let compressResult = bytes.withUnsafeBufferPointer { input in
             tjCompress2(
                 handle,
