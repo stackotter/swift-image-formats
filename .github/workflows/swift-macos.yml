@@ -21,9 +21,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Test x86_64
-        run: swift test --arch x86_64
-
       - name: Test arm64
         run: swift test --arch arm64
 
+      - name: Build x86_64 # SwiftPM doesn't like running cross compiled tests
+        run: swift build --arch x86_64
